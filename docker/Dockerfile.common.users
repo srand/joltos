@@ -1,0 +1,3 @@
+{% if rootpass %}
+RUN echo "root:{{ rootpass }}" | chpasswd
+{% endif %}

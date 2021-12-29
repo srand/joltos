@@ -1,0 +1,6 @@
+[submodule "packages/u-boot"]
+	path = packages/u-boot
+	url = https://github.com/u-boot/u-boot
+[submodule "packages/linux"]
+	path = packages/linux
+	url = https://github.com/torvalds/linux.git

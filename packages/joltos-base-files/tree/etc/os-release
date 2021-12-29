@@ -1,0 +1,11 @@
+NAME="JoltOS"
+VERSION="1.0 (Happy Hacker)"
+ID=joltos
+ID_LIKE=debian
+PRETTY_NAME="JoltOS 1.0"
+VERSION_ID="1.0"
+HOME_URL="https://jolt.rtfd.io/"
+SUPPORT_URL="https://jolt.rtfd.io/"
+BUG_REPORT_URL="https://github.com/srand/joltos"
+PRIVACY_POLICY_URL="https://jolt.rtfd.io/"
+VERSION_CODENAME=happyhacker

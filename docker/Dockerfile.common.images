@@ -1,0 +1,21 @@
+################################################################################
+
+{% include "docker/Dockerfile.common.tools" %}
+
+################################################################################
+
+FROM tools as build
+COPY --from=rootfs / /build/root
+COPY {{ variant }}.cfg /build/
+WORKDIR /build
+RUN genimage --config {{ variant }}.cfg /build
+
+COPY --from=rootfs /vmlinuz /build/images
+COPY --from=rootfs /initrd.img /build/images
+
+################################################################################
+
+FROM scratch as image
+COPY --from=build /build/images /
+
+################################################################################

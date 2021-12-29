@@ -1,0 +1,4 @@
+artifacts/
+build/
+kernel/
+__pycache__
