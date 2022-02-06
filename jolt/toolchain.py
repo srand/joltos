@@ -7,37 +7,42 @@ from jolt.plugins import git
 
 import functools
 
+from joltos.jolt.tasks import DistroArchParameter
+from joltos.jolt.tasks import DistroNameParameter
+from joltos.jolt.tasks import DistroVersionParameter
+
 
 class Tools(docker.DockerImage):
-    dockerfile = """
-    FROM debian:latest
-    ARG DEBIAN_FRONTEND=noninteractive
-    ENTRYPOINT ["sh"]
-    RUN apt-get update
-    RUN apt-get install -y automake bc bison dosfstools flex libpython3-dev libssl-dev libtool lzop make mtools pkg-config python3 python3-distutils python3-pkg-resources swig
-    RUN apt-get install -y build-essential
-    RUN apt-get install -y crossbuild-essential-armhf
-    RUN apt-get install -y crossbuild-essential-arm64
-    RUN apt-get install -y libconfuse-dev # genimage
-    """
-    context = "packages/tools"
+    distro = DistroNameParameter()
+    version = DistroVersionParameter()
+    dockerfile = "docker/Dockerfile.{distro}.tools"
+    context = "docker"
     extract = True
     imagefile = None
 
+    def run(self, deps, tools):
+        dockerfile = tools.render(self.dockerfile)
+        with tools.cwd(tools.builddir()):
+            self.dockerfile = tools.expand_path("Dockerfile")
+            tools.write_file(self.dockerfile, dockerfile)
+        super().run(deps, tools)
 
-@attributes.method("publish", "publish_{arch}")
+
+@attributes.method("publish", "publish_{distro}_{arch}")
 class SDK(Task):
-    arch = Parameter(values=["armv7", "aarch64", "host"])
+    arch = DistroArchParameter()
+    distro = DistroNameParameter()
+    version = DistroVersionParameter()
 
-    requires = ["tools"]
+    requires = ["tools:distro={distro},version={version}"]
 
-    def publish_aarch64(self, artifact, tools):
+    def publish_debian_aarch64(self, artifact, tools):
         artifact.environ.CROSS_COMPILE = "aarch64-linux-gnu-"
 
-    def publish_armv7(self, artifact, tools):
+    def publish_debian_armv7(self, artifact, tools):
         artifact.environ.CROSS_COMPILE = "arm-linux-gnueabihf-"
 
-    def publish_host(self, artifact, tools):
+    def publish_debian_host(self, artifact, tools):
         pass
 
 

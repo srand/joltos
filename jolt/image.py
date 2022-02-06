@@ -6,7 +6,12 @@ import json
 from jolt import attributes, influence, Parameter, Task, utils
 from jolt.plugins.docker import DockerImage
 
+from joltos.jolt.tasks import DistroNameParameter
+from joltos.jolt.tasks import DistroVersionParameter
 
+
+
+@attributes.attribute("platform", "platform_{board}")
 @attributes.requires("install_tasks")
 @influence.files("{template}")
 @influence.files("{_install_files}")
@@ -15,10 +20,15 @@ class Image(DockerImage):
     abstract = True
 
     base = None
-    variant = Parameter("default", values=["default"])
+    distro = DistroNameParameter()
+    version = DistroNameParameter()
+    variant = Parameter("default", values=["default"], help="Image variant")
 
     ############################################################################
 
+    template = "docker/Dockerfile.{distro}"
+
+    commands = []
     install_pkgs = []
     install_tasks = []
     install_files = []
@@ -29,7 +39,11 @@ class Image(DockerImage):
 
     ############################################################################
 
-    cleanup = False
+    platform_qemu = "linux/amd64"
+    platform_qemu_arm = "linux/arm/v7"
+
+    ############################################################################
+
     context = "images"
     extract = True
     imagefile = None
@@ -60,16 +74,14 @@ class Image(DockerImage):
 
 class DebianImage(Image):
     abstract = True
-    base = "debian:bullseye"
-    template = "docker/Dockerfile.debian"
+    distro = DistroNameParameter("debian")
+    version = DistroVersionParameter("bullseye")
 
 
-@attributes.attribute("platform", "platform_{board}")
-class JoltOS(DebianImage):
+class JoltOS_Debian(DebianImage):
+    name = "joltos/debian"
+
     board = Parameter(values=["qemu", "qemu_arm"])
-
-    platform_qemu = "linux/amd64"
-    platform_qemu_arm = "linux/arm/v7"
 
     install_pkgs = [
         "linux-image-generic",
@@ -90,21 +102,49 @@ class JoltOS(DebianImage):
     ]
 
 
-@attributes.attribute("qemu", "qemu_{board}")
-class Qemu(Task):
-    """ Run Jolt OS in QEMU/KVM """
+class AlpineImage(Image):
+    abstract = True
+    distro = DistroNameParameter("alpine")
+    version = DistroVersionParameter("3.15")
+
+
+class JoltOS_Alpine(AlpineImage):
+    name = "joltos/alpine"
 
     board = Parameter(values=["qemu", "qemu_arm"])
-    variant = Parameter("default", values=["default"])
 
-    cacheable = False
-    requires = ["joltos:board={board},variant={variant}"]
+    install_pkgs = [
+        "alpine-base",
+        "linux-lts",
+    ]
 
-    qemu_qemu = "kvm"
-    qemu_qemu_arm = "qemu-system-arm"
+    commands = [
+        "rc-update add savecache shutdown",
+        "rc-update add killprocs shutdown",
+        "rc-update add mount-ro shutdown",
 
-    def run(self, deps, tools):
-        self.builddir = tools.sandbox(deps[self.requires[0]])
-        with tools.cwd(self.builddir, "rootfs"):
-            import subprocess
-            subprocess.call(tools.expand("{qemu} -m 1G -kernel vmlinuz -initrd initrd.img -hda rootfs.qcow2 -append 'root=/dev/sda rw console=ttyS0' -serial stdio -net user"), shell=True, env=tools._env, cwd=tools.getcwd())
+        "rc-update add modules boot",
+        "rc-update add hwclock boot",
+        "rc-update add hostname boot",
+        "rc-update add sysctl boot",
+        "rc-update add bootmisc boot",
+        "rc-update add syslog boot",
+
+        "rc-update add sysfs sysinit",
+        "rc-update add dmesg sysinit",
+        "rc-update add mdev sysinit",
+        "rc-update add hwdrivers sysinit",
+    ]
+
+    install_files = [
+    ]
+
+    install_tasks = [
+        "joltos/base-files",
+    ]
+
+    remove_files = [
+        "/lib/firmware",
+        "/usr/share/doc",
+        "/usr/share/man",
+    ]

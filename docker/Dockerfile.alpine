@@ -1,10 +1,8 @@
 ################################################################################
 
 FROM {{distro}}:{{version}} as rootfs
-ARG DEBIAN_FRONTEND=noninteractive
-RUN apt-get update
 
-{% include "docker/Dockerfile.debian.packages" %}
+{% include "docker/Dockerfile.alpine.packages" %}
 {% include "docker/Dockerfile.common.files" %}
 {% include "docker/Dockerfile.common.users" %}
 {% include "docker/Dockerfile.common.commands" %}
@@ -14,7 +12,7 @@ COPY artifacts /
 ################################################################################
 
 {% include "docker/Dockerfile.common.images" %}
-{% include "docker/Dockerfile.debian.images" %}
+{% include "docker/Dockerfile.alpine.images" %}
 {% include "docker/Dockerfile.common.publish" %}
 
 ################################################################################

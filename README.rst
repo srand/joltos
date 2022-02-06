@@ -35,13 +35,19 @@ A demo image for the Qemu virt machine can be built with the ``joltos`` Jolt tas
 
   .. code-block:: bash
 
-    $ jolt build joltos:board=qemu
+    $ jolt build joltos/debian:board=qemu
+
+Or, if you prefer an image based on Alpine:
+
+  .. code-block:: bash
+
+    $ jolt build joltos/alpine:board=qemu
 
 It can then be emulated with:
 
   .. code-block:: bash
 
-    $ jolt build qemu:board=qemu
+    $ jolt build qemu/debian:board=qemu
 
 The built image is currently based on Debian. Supported boards are ``qemu`` and ``qemu_arm``.
 

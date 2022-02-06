@@ -6,6 +6,7 @@
     <recipe src="joltos/jolt/toolchain.py" joltdir="joltos" />
     <recipe src="joltos/jolt/uboot.py" joltdir="joltos" />
     <recipe src="joltos/jolt/linux.py" joltdir="joltos" />
+    <recipe src="joltos/jolt/qemu.py" joltdir="joltos" />
 
     <recipe src="joltos/packages/joltos-base-files/build.py"
 	    joltdir="joltos/packages/joltos-base-files" />

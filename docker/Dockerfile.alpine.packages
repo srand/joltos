@@ -1,0 +1,8 @@
+
+{% for pkg in install_pkgs %}
+RUN apk add {{ pkg }}
+{% endfor %}
+
+{% for pkg in remove_pkgs %}
+RUN apk del {{ pkg }}
+{% endfor %}
