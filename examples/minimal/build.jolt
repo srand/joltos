@@ -1,0 +1,29 @@
+from joltos import CXXExecutable
+from joltos import DebianRootfs
+from joltos import DebianSdk
+from joltos import attributes
+
+
+class MinimalDebianSdk(DebianSdk):
+    """ SDK with cross compilers and libraries """
+    name = "debian/sdk"
+
+
+class HelloWorld(CXXExecutable):
+    """ Demo application using the SDK """
+    name = "hello"
+    sdk = "debian/sdk"
+    sources = ["apps/helloworld/main.cpp"]
+
+
+@attributes.squashfs
+@attributes.tar
+class MinimalDebianRootfs(DebianRootfs):
+    """ A minimal rootfs with systemd, as squashfs and tar images """
+    name = "minimal/debian"
+    install_pkgs = ["nano"]
+    install_tasks = ["hello"]
+    remove_files = [
+        "/usr/share/doc",
+        "/usr/share/man",
+    ]
