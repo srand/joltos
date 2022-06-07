@@ -1,0 +1,14 @@
+################################################################################
+
+FROM --platform={{targetplatform}} {{distro}}:{{version}} as rootfs
+ARG DEBIAN_FRONTEND=noninteractive
+RUN apt-get update
+
+{% include "Dockerfile.debian.packages" %}
+{% include "Dockerfile.common.files" %}
+{% include "Dockerfile.common.users" %}
+{% include "Dockerfile.common.commands" %}
+
+COPY artifacts /
+
+################################################################################

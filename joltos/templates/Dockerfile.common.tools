@@ -1,7 +1,7 @@
 FROM debian:bullseye-slim as tools
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update
-RUN apt-get install -y automake build-essential genext2fs git libconfuse-dev libtool pkg-config qemu-utils
+RUN apt-get install -y automake build-essential dosfstools genext2fs git libconfuse-dev libtool mtools pkg-config qemu-utils
 RUN git clone https://github.com/pengutronix/genimage.git
 WORKDIR genimage
 RUN ./autogen.sh

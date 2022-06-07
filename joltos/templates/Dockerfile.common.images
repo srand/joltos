@@ -1,13 +1,15 @@
 ################################################################################
 
-{% include "docker/Dockerfile.common.tools" %}
+{% include "Dockerfile.common.tools" %}
 
 ################################################################################
 
 FROM tools as build
 COPY --from=rootfs / /build/root
 COPY {{ variant }}.cfg /build/
+# COPY input /build/input/
 WORKDIR /build
+
 RUN genimage --config {{ variant }}.cfg /build
 
 ################################################################################

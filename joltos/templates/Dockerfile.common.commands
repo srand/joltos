@@ -1,6 +1,6 @@
 ################################################################################
 
-{% for cmd in commands %}
+{% for cmd in tools.expand(task._commands()) %}
 RUN {{ cmd }}
 {% endfor %}
 

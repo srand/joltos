@@ -1,0 +1,4 @@
+FROM debian:{{version}} as tools
+ARG DEBIAN_FRONTEND=noninteractive
+RUN apt-get update
+RUN apt-get install -y squashfs-tools e2fsprogs

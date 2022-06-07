@@ -1,8 +1,0 @@
-
-{% for src, dst in install_files %}
-COPY files/{{ src }} {{ dst }}
-{% endfor %}
-
-{% for file in remove_files %}
-RUN rm -rf {{ file }}
-{% endfor %}

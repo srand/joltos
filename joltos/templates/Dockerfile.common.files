@@ -1,0 +1,8 @@
+
+{% for src, dst in tools.expand(task._install_files()) %}
+COPY files/{{ src }} {{ dst }}
+{% endfor %}
+
+{% for file in tools.expand(task._remove_files()) %}
+RUN rm -rf {{ file }}
+{% endfor %}

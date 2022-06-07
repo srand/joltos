@@ -1,6 +1,6 @@
 [submodule "packages/u-boot"]
-	path = packages/u-boot
+	path = joltos/packages/u-boot/git
 	url = https://github.com/u-boot/u-boot
 [submodule "packages/linux"]
-	path = packages/linux
+	path = joltos/packages/linux/git
 	url = https://github.com/torvalds/linux.git

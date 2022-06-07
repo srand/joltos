@@ -23,7 +23,7 @@ class Qemu(Task):
         self.builddir = tools.sandbox(deps[self.requires[0]])
         with tools.cwd(self.builddir, "rootfs"):
             import subprocess
-            subprocess.call(tools.expand("{qemu} -m 1G -kernel {kernel} -initrd {initrd} -hda rootfs.qcow2 -append 'root={root} rw console=ttyS0 {append}' -serial stdio -net nic -net user"), shell=True, env=tools._env, cwd=tools.getcwd())
+            subprocess.call(tools.expand("{qemu} -m 1G -kernel {kernel} -initrd {initrd} -hda rootfs.qcow2 -append 'root={root} rw console=ttyS0 {append}' -net nic -net user -nographic"), shell=True, env=tools._env, cwd=tools.getcwd())
 
 
 class QemuAlpine(Qemu):

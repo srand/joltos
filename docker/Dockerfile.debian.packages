@@ -1,8 +1,0 @@
-
-{% for pkg in install_pkgs %}
-RUN apt-get install -y {{ pkg }}
-{% endfor %}
-
-{% for pkg in remove_pkgs %}
-RUN apt-get remove -y {{ pkg }}
-{% endfor %}

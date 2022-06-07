@@ -11,11 +11,11 @@ available Docker images and package repositories.
 Prerequisites
 -------------
 
-JoltOS is built upon the Jolt task execution tool. Install it with:
+JoltOS is built upon the Jolt task execution tool. Install both with:
 
   .. code-block:: bash
 
-    $ pip install jolt
+    $ pip install joltos
 
 Python 3.9 or later is required.
 
@@ -25,36 +25,80 @@ JoltOS also needs Docker. Version 20 or later is recommended. The latest version
 
     $ curl https://get.docker.com | sh
 
-To emulate images, install Qemu using your operating system's package manager.
+For cross-platform builds, the binfmt-support and qemu-user-static packages are required. 
+Install them with your system's package manager:
+
+  .. code-block:: bash
+
+    $ sudo apt install -y binfmt-support qemu-user-static
 
 
 Building an Image
 -----------------
 
-A demo image for the Qemu virt machine can be built with the ``joltos`` Jolt task:
+A minimal example image is available in the `examples/minimal` subdirectory. Build it by running this Jolt command:
 
   .. code-block:: bash
 
-    $ jolt build joltos/debian:board=qemu
-
-Or, if you prefer an image based on Alpine:
-
-  .. code-block:: bash
-
-    $ jolt build joltos/alpine:board=qemu
-
-It can then be emulated with:
-
-  .. code-block:: bash
-
-    $ jolt build qemu/debian:board=qemu
-
-The built image is currently based on Debian. Supported boards are ``qemu`` and ``qemu_arm``.
+    $ jolt build minimal/debian:board=qemu
 
 
 Customizing Images
 ------------------
 
-Work in progress.
+Create a Jolt Python class inheriting either AlpineImage or DebianImage. 
+Both base classes define different attributes that can be overridden to 
+customize the image.
 
-Create a subclass of the JoltOS Python class and assign class attributes as appropriate.
+ - install_files - List of files to be copied into the image.
+ - install_pkgs - List of packages to be installed using the distro package manager.
+ - install_tasks - List of Jolt task artifacts to be copied into the image.
+ - remove_files - List of files to remove from the image.
+ - remove_pkgs - List of packages to be removed using the distro package manager.
+
+Image formats are chosen using decorators:
+
+ - joltos.attributes.squashfs - Builds a squashfs image
+ - joltos.attributes.tar - Builds a tar archive
+
+Multiple image types can be built at once. 
+
+  .. code-block:: python
+
+    @joltos.attributes.squashfs
+    @joltos.attributes.tar
+    class MinimalDebianRootfs(DebianRootfs):
+      """ A minimal rootfs with systemd, as squashfs and tar images """
+      name = "minimal/debian"
+      install_pkgs = ["nano"]
+      remove_files = [
+        "/usr/share/doc",
+        "/usr/share/man",
+      ]
+
+
+To build different variants of an image for different types of boards you 
+can add conditional attributes that are selected based on the values of 
+build parameters. Example:
+
+  .. code-block:: python
+
+    @joltos.attributes.tar
+    @joltos.attributes.install_pkgs("install_pkgs_{board}")
+    @joltos.attributes.install_pkgs("install_pkgs_{variant}")
+    class MinimalDebianRootfs(DebianRootfs):
+      """ A minimal rootfs with systemd, as squashfs and tar images """
+      name = "minimal/debian"
+
+      # This attribute is always selected
+      install_pkgs = ["nano"]
+
+      # This attribute is selected when variant=debug
+      install_pkgs_debug = ["gdb"]
+
+      # This attribute is selected when board=qemu
+      install_pkgs_qemu = []
+
+  .. code-block:: bash
+
+    $ jolt build minimal/debian:board=qemu,variant=debug

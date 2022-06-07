@@ -1,0 +1,8 @@
+
+{% for pkg in tools.expand(task._install_pkgs()) %}
+RUN apk add {{ pkg }}
+{% endfor %}
+
+{% for pkg in tools.expand(task._remove_pkgs()) %}
+RUN apk del {{ pkg }}
+{% endfor %}

@@ -1,0 +1,8 @@
+
+{% for pkg in tools.expand(task._install_pkgs()) %}
+RUN apt-get install --no-install-recommends -y {{ pkg }}
+{% endfor %}
+
+{% for pkg in tools.expand(task._remove_pkgs()) %}
+RUN apt-get remove -y {{ pkg }}
+{% endfor %}
