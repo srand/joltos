@@ -2,6 +2,9 @@ from joltos import CXXExecutable
 from joltos import DebianRootfs
 from joltos import DebianSdk
 from joltos import attributes
+from joltos import images
+
+from jolt import attributes as jolt_attributes
 
 
 class MinimalDebianSdk(DebianSdk):
@@ -16,11 +19,15 @@ class HelloWorld(CXXExecutable):
     sources = ["apps/helloworld/main.cpp"]
 
 
-@attributes.squashfs
-@attributes.tar
+@images.boot()
+#@images.e2fs()
+@images.genimage("boards/{board}/{variant}.cfg")
+#@images.squashfs()
+#@images.tar(compression="gz")
+@attributes.load("boards/{board}/attributes.py")
 class MinimalDebianRootfs(DebianRootfs):
     """ A minimal rootfs with systemd, as squashfs and tar images """
-    name = "minimal/debian"
+    name = "debian/minimal"
     install_pkgs = ["nano"]
     install_tasks = ["hello"]
     remove_files = [

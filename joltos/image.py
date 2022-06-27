@@ -33,7 +33,7 @@ class attributes:
             return cls
 
         return decorator
-    
+
     @staticmethod
     def remove_files(name):
         return utils.concat_attributes("remove_files", name)
@@ -42,51 +42,173 @@ class attributes:
     def remove_pkgs(name):
         return utils.concat_attributes("remove_pkgs", name)
 
-    def squashfs(cls):
-        class SquashFS(cls):
-            def run(self, deps, tools):
-                super().run(deps, tools)
-                self.run_build_directory(deps, tools)
-                self.run_build_squashfs(deps, tools)
+    def load(filepath):
+        def decorate(cls):
+            class Properties(cls):
+                def __init__(self, *args, **kwargs):
+                    super().__init__(*args, **kwargs)
+                    self._init_attributes()
 
-            def run_build_squashfs(self, deps, tools):
-                with tools.cwd(tools.builddir()):
-                    with tools.unshare() as ns, ns:
-                        self.info("Building squashfs")
-                        tools.run("mksquashfs rootfs/ {canonical_name}.squashfs")
+                def _init_attributes(self):
+                    for key, val in eval(self.tools.read_file(filepath)).items():
+                        setattr(self, key, val)
 
-            def publish(self, artifact, tools):
-                super().publish(artifact, tools)
-                with tools.cwd(tools.builddir()):
-                    artifact.collect("{canonical_name}.squashfs")
+            return Properties
+        return decorate
 
-            def publish_default(self, artifact, tools):
-                pass
-        
-        return SquashFS
 
-    def tar(cls):
-        class Tar(cls):
-            def run(self, deps, tools):
-                super().run(deps, tools)
-                self.run_build_directory(deps, tools)
-                self.run_build_tar(deps, tools)
+class images:
+    def squashfs():
+        def decorate(cls):
+            class SquashFS(cls):
+                def run(self, deps, tools):
+                    super().run(deps, tools)
+                    self.run_build_directory(deps, tools)
+                    self.run_build_squashfs(deps, tools)
 
-            def run_build_tar(self, deps, tools):
-                with tools.cwd(tools.builddir()):
-                    with tools.unshare() as ns, ns:
-                        self.info("Building tar")
-                        tools.archive("rootfs/", "{canonical_name}.tar")
+                def run_build_squashfs(self, deps, tools):
+                    with tools.cwd(tools.builddir()):
+                        with tools.unshare() as ns, ns:
+                            self.info("Building squashfs")
+                            tools.run("mksquashfs rootfs/ {canonical_name}.squashfs")
 
-            def publish(self, artifact, tools):
-                super().publish(artifact, tools)
-                with tools.cwd(tools.builddir()):
-                    artifact.collect("{canonical_name}.tar")
+                def publish(self, artifact, tools):
+                    super().publish(artifact, tools)
+                    with tools.cwd(tools.builddir()):
+                        artifact.collect("{canonical_name}.squashfs")
 
-            def publish_default(self, artifact, tools):
-                pass
-        
-        return Tar
+                def publish_default(self, artifact, tools):
+                    pass
+
+            return SquashFS
+
+        return decorate
+
+    def boot(symlink=True):
+        def decorate(cls):
+            class BootImage(cls):
+                def run(self, deps, tools):
+                    super().run(deps, tools)
+                    self.run_build_directory(deps, tools)
+                    self.run_build_boot(deps, tools)
+
+                def run_build_boot(self, deps, tools):
+                    with tools.cwd(tools.builddir()):
+                        if not os.path.isdir(tools.expand_path("rootfs/boot")):
+                            return
+                        tools.copy("rootfs/boot", "boot/", symlinks=True)
+
+                    with tools.cwd(tools.builddir(), "boot"):
+                        if symlink and not tools.glob("vmlinuz"):
+                            for vmlinuz in tools.glob("vmlinuz-*"):
+                                tools.symlink(vmlinuz, "vmlinuz")
+                                break
+                        if symlink and not tools.glob("initrd.img"):
+                            for initrd in tools.glob("initrd.img-*"):
+                                tools.symlink(initrd, "initrd.img")
+                                break
+                        if symlink and not tools.glob("initramfs.img"):
+                            for initramfs in tools.glob("initramfs.img-*") + tools.glob("initramfs-*"):
+                                tools.symlink(initramfs, "initramfs.img")
+                                break
+
+                def publish(self, artifact, tools):
+                    super().publish(artifact, tools)
+                    with tools.cwd(tools.builddir()):
+                        artifact.collect("boot", symlinks=True)
+
+                def publish_default(self, artifact, tools):
+                    pass
+
+            return BootImage
+
+        return decorate
+
+    def e2fs(size="1G", fstype="ext4"):
+        def decorate(cls):
+            class E2FS(cls):
+                def run(self, deps, tools):
+                    super().run(deps, tools)
+                    self.run_build_directory(deps, tools)
+                    self.run_build_e2fs(deps, tools)
+
+                def run_build_e2fs(self, deps, tools):
+                    with tools.cwd(tools.builddir()):
+                        with tools.unshare() as ns, ns:
+                            self.info("Building e2fs")
+                            tools.run(f"mke2fs -d rootfs/ -t {fstype} {{canonical_name}}.{fstype} {size}")
+
+                def publish(self, artifact, tools):
+                    super().publish(artifact, tools)
+                    with tools.cwd(tools.builddir()):
+                        artifact.collect(f"{{canonical_name}}.{fstype}")
+
+                def publish_default(self, artifact, tools):
+                    pass
+
+            return E2FS
+
+        return decorate
+
+    def genimage(config):
+        def decorate(cls):
+            @jolt_attributes.requires("requires_genimage")
+            @influence.files(config)
+            class GenImage(cls):
+                requires_genimage = []
+
+                def run(self, deps, tools):
+                    super().run(deps, tools)
+                    self.run_build_directory(deps, tools)
+                    self.run_build_genimage(deps, tools)
+
+                def run_build_genimage(self, deps, tools):
+                    with tools.cwd(tools.builddir()):
+                        for req in self.requires_genimage:
+                            deps[req].copy("*", "input/")
+                        with tools.unshare() as ns, ns:
+                            self.info("Running genimage")
+                            tools.run(f"genimage --outputpath images/ --rootpath rootfs/ --config {{joltdir}}/{config}")
+
+                def publish(self, artifact, tools):
+                    super().publish(artifact, tools)
+                    with tools.cwd(tools.builddir(), "images"):
+                        artifact.collect("*")
+
+                def publish_default(self, artifact, tools):
+                    pass
+
+            return GenImage
+
+        return decorate
+
+    def tar(compression=None):
+        compression = "." + compression if compression else ""
+
+        def decorate(cls):
+            class Tar(cls):
+                def run(self, deps, tools):
+                    super().run(deps, tools)
+                    self.run_build_directory(deps, tools)
+                    self.run_build_tar(deps, tools)
+
+                def run_build_tar(self, deps, tools):
+                    with tools.cwd(tools.builddir()):
+                        with tools.unshare() as ns, ns:
+                            self.info("Building tar")
+                            tools.archive("rootfs/", "{canonical_name}.tar" + compression)
+
+                def publish(self, artifact, tools):
+                    super().publish(artifact, tools)
+                    with tools.cwd(tools.builddir()):
+                        artifact.collect("{canonical_name}.tar" + compression)
+
+                def publish_default(self, artifact, tools):
+                    pass
+
+            return Tar
+
+        return decorate
 
 
 
@@ -186,7 +308,7 @@ class BareDebianRootfs(Rootfs):
 
 @attributes.install_pkgs("install_pkgs_default")
 class DebianRootfs(BareDebianRootfs):
-    name = "joltos/debian"
+    abstract = True
 
     board = BoardParameter()
 

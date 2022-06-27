@@ -40,14 +40,16 @@ A minimal example image is available in the `examples/minimal` subdirectory. Bui
 
   .. code-block:: bash
 
-    $ jolt build minimal/debian:board=qemu
+    $ jolt build debian/minimal:board=qemu
+
+    $ jolt build debian/minimal:board=qemu_arm
 
 
 Customizing Images
 ------------------
 
-Create a Jolt Python class inheriting either AlpineImage or DebianImage. 
-Both base classes define different attributes that can be overridden to 
+Create a Jolt Python class inheriting either AlpineImage or DebianImage.
+Both base classes define different attributes that can be overridden to
 customize the image.
 
  - install_files - List of files to be copied into the image.
@@ -58,15 +60,17 @@ customize the image.
 
 Image formats are chosen using decorators:
 
- - joltos.attributes.squashfs - Builds a squashfs image
- - joltos.attributes.tar - Builds a tar archive
+ - joltos.images.e2fs - Builds an ext2/3/4 file system
+ - joltos.images.genimage - Runs genimage with provided config file
+ - joltos.images.squashfs - Builds a squashfs image
+ - joltos.images.tar - Builds a tar archive
 
-Multiple image types can be built at once. 
+Multiple image types can be built at once.
 
   .. code-block:: python
 
-    @joltos.attributes.squashfs
-    @joltos.attributes.tar
+    @joltos.images.squashfs
+    @joltos.images.tar
     class MinimalDebianRootfs(DebianRootfs):
       """ A minimal rootfs with systemd, as squashfs and tar images """
       name = "minimal/debian"
@@ -77,13 +81,13 @@ Multiple image types can be built at once.
       ]
 
 
-To build different variants of an image for different types of boards you 
-can add conditional attributes that are selected based on the values of 
+To build different variants of an image for different types of boards you
+can add conditional attributes that are selected based on the values of
 build parameters. Example:
 
   .. code-block:: python
 
-    @joltos.attributes.tar
+    @joltos.images.tar
     @joltos.attributes.install_pkgs("install_pkgs_{board}")
     @joltos.attributes.install_pkgs("install_pkgs_{variant}")
     class MinimalDebianRootfs(DebianRootfs):
@@ -101,4 +105,27 @@ build parameters. Example:
 
   .. code-block:: bash
 
-    $ jolt build minimal/debian:board=qemu,variant=debug
+    $ jolt build debian/minimal:board=qemu,variant=debug
+
+
+The target architecture is selected by defining the ``platform`` class attribute.
+Values are the same as passed to the Docker ``--platform`` parameter.
+
+Task class attributes can also be loaded from a file, conditionally selected based
+on the value of the ``board`` parameter:
+
+  .. code-block:: python
+
+    @joltos.images.tar
+    @joltos.attributes.load("boards/{board}/attributes.py")
+    class MinimalDebianRootfs(DebianRootfs):
+      """ A minimal rootfs with systemd, as squashfs and tar images """
+      name = "minimal/debian"
+
+
+  .. code-block:: python
+
+    # boards/qemu_arm/attributes.py
+    {
+      "platform": "linux/arm/v7"
+    }

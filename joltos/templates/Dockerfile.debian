@@ -1,6 +1,6 @@
 ################################################################################
 
-FROM --platform={{targetplatform}} {{distro}}:{{version}} as rootfs
+FROM --platform={{platform}} {{distro}}:{{version}} as rootfs
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update
 
