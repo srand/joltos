@@ -44,6 +44,7 @@ class attributes:
 
     def load(filepath):
         def decorate(cls):
+            @influence.files(filepath)
             class Properties(cls):
                 def __init__(self, *args, **kwargs):
                     super().__init__(*args, **kwargs)
